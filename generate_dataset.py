@@ -39,8 +39,8 @@ for i in range(NUM_RECORDS):
         rightHalf = leftHalf[::-1]
         records[i] = leftHalf + rightHalf
 
-        # The label for this case should be 1
-        output.append(1)
+        # The label for this case should be 0
+        output.append(0)
 
     elif (prob > 0.25 and prob < 0.5):
         # Make the record consists of two identical
@@ -50,8 +50,8 @@ for i in range(NUM_RECORDS):
             leftHalf.append(random.randint(0,9))
         records[i] = leftHalf + leftHalf
 
-        # The label for this case should be 2
-        output.append(2)
+        # The label for this case should be 1
+        output.append(1)
 
     elif (prob > 0.5 and prob < 0.75):
         # Make the record consist of 4 quarters
@@ -68,8 +68,8 @@ for i in range(NUM_RECORDS):
 
         records[i] = q1 + q1_r + q2 + q2_r
 
-        # The label for this case should be 3
-        output.append(3)
+        # The label for this case should be 2
+        output.append(2)
     else:
         # Make the record consists of 4 quarters
         # Q1 : Q1 : Q2 : Q2
@@ -81,8 +81,8 @@ for i in range(NUM_RECORDS):
 
         records[i] = q1 + q1 + q2 + q2
 
-        # The label for this case should be 4
-        output.append(4)
+        # The label for this case should be 3
+        output.append(3)
 
 
 # sanity check
