@@ -13,11 +13,7 @@ import random
 # default values (if not specified by command line options)
 NUM_FEATURES = 12 # For now, it must be a multiple of 4
 
-NUM_RECORDS = 1200 # The maximum number of records should be
-                   # nPr where n = 10, r = NUM_FEATURES
-                   # but since we are limiting the generated 
-                   # numbers to a limited set of patterns,
-                   # the maximum number is much lower than that
+NUM_RECORDS = 1200 # Total number of records
 
 # A function to add an item to the set
 # returns true if the item was actually added,
