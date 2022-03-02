@@ -52,6 +52,8 @@ if __name__ == '__main__':
     # Stores input instances
     records = set()
 
+    print(f'Generating dataset with {NUM_FEATURES} features and {NUM_RECORDS} records...')
+    
     i = 0
     # generate random input
     #for i in range(NUM_RECORDS):
