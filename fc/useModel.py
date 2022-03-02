@@ -56,4 +56,4 @@ if __name__ == '__main__':
     
     class_no = torch.argmax(output)
         
-    print(int(class_no))
+    print(f'{INPUT}:{int(class_no)}')
