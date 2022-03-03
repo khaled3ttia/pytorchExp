@@ -31,6 +31,26 @@ if __name__ == '__main__':
     model = GCN(NUM_FEATURES, NUM_CLASSES)
 
     data = dataset[0]
+    print(f'Size of graph dataset is {len(dataset)} graphs')
+
+
+    # node feature matrix
+    print('Node feature matrix')
+    print(data.x)
+    print(data.x.shape)
+
+    # edge index (graph connectivity)
+    print('Edge index')
+    print(data.edge_index)
+
+
+    # edge feature matrix
+    print(data.edge_attr)
+
+    # labels
+    print(data.y)
+    # print unique values
+    print(torch.unique(data.y))
 
     optimizer = torch.optim.Adam(model.parameters(), lr = 0.01, weight_decay=5e-4)
     model.train()
