@@ -160,6 +160,6 @@ if __name__ == '__main__':
     print(f'Training set accuracy: {train_acc}\nTest set accuracy: {test_acc}')
 
     # save the model
-    torch.save(net.state_dict(), 'model.pt')
+    torch.save(net.state_dict(), 'model-' +str(NO_FEATURES) + '.pt')
 
 
