@@ -32,16 +32,17 @@ if __name__ == '__main__':
 
     if (args.n_classes):
         NO_CLASSES = args.n_classes
+    # Find out the number of features
+    NUM_FEATURES = len(INPUT)
+
+
 
     # Load the trained model
     net = Net(len(INPUT), FACTOR , NO_CLASSES )
 
-    net.load_state_dict(torch.load('model.pt'))
+    net.load_state_dict(torch.load('model-' +str(NUM_FEATURES) +  '.pt'))
 
     net.eval()
-
-    # Find out the number of features
-    NUM_FEATURES = len(INPUT)
 
     # generate the compatible tensor for input
 
