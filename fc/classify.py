@@ -6,11 +6,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
+from sklearn.model_selection import KFold
 
-# default values, can be overriden later
-#NO_FEATURES = 10
-#NO_CLASSES = 4
-#FACTOR = 8
+# Reset weights before each fold
+# used in k-fold cross validation
+def reset_weights(model):
+    for layer in model.children():
+        if hasattr(layer, 'reset_parameters'):
+            layer.reset_parameters()
+
 
 # Prepare the dataset
 class simpleDataset(Dataset):
@@ -100,26 +104,7 @@ if __name__ == '__main__':
     NO_CLASSES = dataset.n_classes
     print(f'Successfully loaded! Number of features is {NO_FEATURES}\nand number of labels is {NO_CLASSES}')
 
-    # set sizes for train and test 
-    train_size = int(0.8 * len(dataset))
-
-    if (args.train_size):
-        train_size = int(args.train_size * len(dataset))
-
-    test_size = len(dataset) - train_size
-    print(f'Splitting data set as follows: {(train_size/len(dataset))*100}% Training, {(test_size/len(dataset))*100}% Test...')
-
-    # TODO: add cross-validation
-
-    # actually randomly split train and test sets
-    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
-
-
-    # create a data loader for each of the train and test sets
-    trainset = torch.utils.data.DataLoader(train_dataset, batch_size=10, shuffle=True)
-
-    testset = torch.utils.data.DataLoader(test_dataset, batch_size=10, shuffle=True)
-
+    
     # learning rate 
     lr = 0.01
     if (args.lrate):
@@ -134,32 +119,90 @@ if __name__ == '__main__':
     if (args.nnFactor):
         FACTOR = args.nnFactor
 
-    # instantiate the neural net
-    net = Net(NO_FEATURES, FACTOR, NO_CLASSES)
+    print(f'Training with learning rate of {lr} and {epochs} epochs...')
+     
+    # Create a KFold object (sklearn) with k=10
+    kfold = KFold(n_splits=10, shuffle=True)
 
-    # define the loss function and the optimizer
+   
+    accuracies = []
+
+    # use k-fold cross validation to evaluate the accuracy is the model 
+    # Note that k-fold cross validation is only used to evaluate the model
+    # more accurately and remove some of the bias as compared to train-test
+    # split only. However, all models obtained during cross validation are 
+    # discarded. If the accuracy numbers obtained by cross validation are acceptable,
+    # a new model is trained using the entire dataset with the same parameters
+    # that turned out to be good.
+    
+    # K-fold cross validation is usually used in the experiments phase to choose between
+    # different model and different parameters
+
+    # for more info about this:
+    #   [1] https://machinelearningmastery.com/k-fold-cross-validation/
+    #   [2] https://www.researchgate.net/post/How_to_select_the_classification_model_after_k-cross-validation (specifically Roberto Vega answer to the question)
+
+    for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
+        print(f'Fold: {fold}')
+        
+        # randomly sample elements from ids 
+        train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
+        test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
+    
+        # data loaders based on samples
+        trainset = torch.utils.data.DataLoader(dataset, batch_size=10, sampler=train_subsampler)
+        testset = torch.utils.data.DataLoader(dataset, batch_size=10, sampler=test_subsampler)
+
+
+        # instantiate the neural net
+        net = Net(NO_FEATURES, FACTOR, NO_CLASSES)
+        
+        # reset weights
+        net.apply(reset_weights)
+
+        # define the loss function and the optimizer
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(net.parameters(), lr=lr)
+        
+        for epoch in range(epochs):
+            for i, (inputs, labels) in enumerate(trainset):
+                output = net(inputs.float())
+                loss = criterion(output, labels)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+
+        fold_accuracy = check_accuracy(testset, net)
+        print(f'Accuracy for fold {fold} : {fold_accuracy}')
+        accuracies.append(fold_accuracy)
+
+    avg_accuracy = sum(accuracies)/len(accuracies)
+    print(f'Average accuracy accross all folds: {avg_accuracy}')
+
+    # train the final model with the entire dataset
+    # this article [https://machinelearningmastery.com/train-final-machine-learning-model/] 
+    # is a nice guide to this procedure 
+    
+    # use the entire dataset
+    final_trainset = torch.utils.data.DataLoader(dataset, batch_size=10, shuffle=True)
+
+    # create the model using the previous (good) parameters
+    net = Net(NO_FEATURES, FACTOR, NO_CLASSES)
+    
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=lr)
 
-    print(f'Training with learning rate of {lr} and {epochs} epochs...')
-
-    # do the training
+    print(f'Training the final model on the entire dataset...')
     for epoch in range(epochs):
-
-        for i, (inputs, labels) in enumerate(trainset):
+        for i, (input, labels) in enumerate(final_trainset):
             output = net(inputs.float())
             loss = criterion(output, labels)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-    # find out the accuracy for both the training and testing sets
-    train_acc = check_accuracy(trainset, net)
-    test_acc = check_accuracy(testset, net)
-
-    print(f'Training set accuracy: {train_acc}\nTest set accuracy: {test_acc}')
 
     # save the model
     torch.save(net.state_dict(), 'model-' +str(NO_FEATURES) + '.pt')
-
-
+    print(f'Model saved successfull to model-{str(NO_FEATURES)}.pt!')
